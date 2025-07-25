@@ -14,21 +14,26 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 /**
  * Job applicant class.
  */
 public class JobApplicant {
-	
+
 	private String firstName = null;
 	private String middleName = null;
 	private String lastName = null;
-	
+
 	public void setName(String firstName, String middleName, String lastName) {
 		this.firstName = firstName == null ? "" : firstName;
 		this.middleName = middleName == null ? "" : middleName;
 		this.lastName = lastName == null ? "" : lastName;
 	}
-	
+
 	public void setSpanishName(String primerNombre, String segundoNombre,
 							   String primerApellido, String segundoApellido) {
 		this.firstName = primerNombre == null ? "" : primerNombre;
@@ -41,7 +46,7 @@ public class JobApplicant {
 			this.lastName = "";
 		}
 	}
-	
+
 	public String formatLastNameFirst() {
 		StringBuilder sb = new StringBuilder(lastName);
 		sb.append(", ");
@@ -52,7 +57,7 @@ public class JobApplicant {
 		}
 		return sb.toString();
 	}
-	
+
 	public int validateName() {
 		if ( firstName.length() > 0 && lastName.length() > 0 ) {
 			return 0;
@@ -60,14 +65,14 @@ public class JobApplicant {
 			return 6;
 		}
 	}
-	
+
 	private String ssn;
-	
+
 	private String[] specialCases = new String[] {
 	    "219099999", "078051120"
 	};
-	
-	private String zipCode;    
+
+	private String zipCode;
 	private String city;
 	private String state;
 
@@ -76,9 +81,9 @@ public class JobApplicant {
   		    this.ssn = ssn.replaceAll("-", "");
 		} else {
   		    this.ssn = "";
-		}    
+		}
 	}
-	
+
 	public String formatSsn() {
 		StringBuilder sb = new StringBuilder(ssn.substring(0,3));
 		sb.append("-");
@@ -92,7 +97,7 @@ public class JobApplicant {
 		if ( !ssn.matches("\\d{9}") ) {
 			return 1;
 		}
-		if ( "000".equals(ssn.substring(0,3)) || 
+		if ( "000".equals(ssn.substring(0,3)) ||
 			 "666".equals(ssn.substring(0,3)) ||
 			 "9".equals(ssn.substring(0,1)) ) {
 			return 2;
@@ -110,46 +115,43 @@ public class JobApplicant {
 
 	public void setZipCode(String zipCode) throws URISyntaxException, IOException {
 		this.zipCode = zipCode;
-		// Use a service to look up the city and state based on zip code.
-		// Save the returned city and state if content length is greater than zero.
-		URI uri = new URIBuilder()
-            .setScheme("http")
-            .setHost("www.zip-codes.com")
-            .setPath("/search.asp")
-            .setParameter("fld-zip", this.zipCode)
-            .setParameter("selectTab", "0")
-            .setParameter("srch-type", "city")
-            .build();
-        HttpGet request = new HttpGet(uri);
-        CloseableHttpClient httpclient = HttpClients.createDefault();
-        CloseableHttpResponse response = httpclient.execute(request);
-        try {
-            HttpEntity entity = response.getEntity();
-            if (entity != null) {
-                long len = entity.getContentLength();
-              	BufferedReader rd = new BufferedReader(
-                        new InputStreamReader(response.getEntity().getContent()));
-           		StringBuffer result = new StringBuffer();
-           		String line = "";
-           		while ((line = rd.readLine()) != null) {
-           			result.append(line);
-       		    }
-                int metaOffset = result.indexOf("<meta ");
-                int contentOffset = result.indexOf(" content=\"Zip Code ", metaOffset);
-                contentOffset += 19;
-                contentOffset = result.indexOf(" - ", contentOffset);
-                contentOffset += 3;
-                int stateOffset = result.indexOf(" ", contentOffset);
-                city = result.substring(contentOffset, stateOffset);
-                stateOffset += 1;
-                state = result.substring(stateOffset, stateOffset+2);
-            } else {
-            	city = "";
-            	state = "";
-            }
-        } finally {
-            response.close();
-        }
+		// Use zippopotam.us API to look up the city and state based on zip code.
+		try {
+			URI uri = new URIBuilder()
+				.setScheme("http")
+				.setHost("api.zippopotam.us")
+				.setPath("/us/" + zipCode.substring(0,5))
+				.build();
+			HttpGet request = new HttpGet(uri);
+			CloseableHttpClient httpclient = HttpClients.createDefault();
+			CloseableHttpResponse response = httpclient.execute(request);
+			try {
+				HttpEntity entity = response.getEntity();
+				if (entity != null) {
+					BufferedReader rd = new BufferedReader(
+						new InputStreamReader(response.getEntity().getContent()));
+					StringBuffer result = new StringBuffer();
+					String line = "";
+					while ((line = rd.readLine()) != null) {
+						result.append(line);
+					}
+					JsonElement jelement = new JsonParser().parse(result.toString());
+					JsonObject jobject = jelement.getAsJsonObject();
+					JsonArray jarray = jobject.getAsJsonArray("places");
+					jobject = jarray.get(0).getAsJsonObject();
+					city = jobject.get("place name").getAsString();
+					state = jobject.get("state abbreviation").getAsString();
+				} else {
+					city = "";
+					state = "";
+				}
+			} finally {
+				response.close();
+			}
+		} catch (Exception e) {
+			city = "";
+			state = "";
+		}
 	}
 
 	public String getCity() {
@@ -159,7 +161,7 @@ public class JobApplicant {
 	public String getState() {
 		return state;
 	}
-	
+
 	public void add(String firstName,
 			       String middleName,
 			       String lastName,
@@ -170,12 +172,12 @@ public class JobApplicant {
 		setZipCode(zipCode);
 		save();
 	}
-	
+
 	private void save() {
 		//TODO save information to a database
 		System.out.println("Saving to database: " + formatLastNameFirst());
 	}
-	
+
 	public static void main(String[] args) throws URISyntaxException, IOException {
 		JobApplicant jobApplicant = new JobApplicant();
 		boolean done = false;
@@ -188,7 +190,7 @@ public class JobApplicant {
 		while (!done) {
 			System.out.println("Please enter info about a job candidate or 'quit' to quit");
 			System.out.println("First name?");
-            firstName = scanner.nextLine();		
+            firstName = scanner.nextLine();
             if (firstName.equals("quit")) {
             	scanner.close();
             	System.out.println("Bye-bye!");
@@ -198,16 +200,16 @@ public class JobApplicant {
 			System.out.println("Middle name?");
             middleName = scanner.nextLine();
 			System.out.println("Last name?");
-            lastName = scanner.nextLine();			
+            lastName = scanner.nextLine();
 			System.out.println("SSN?");
-            ssn = scanner.nextLine();			
+            ssn = scanner.nextLine();
 			System.out.println("Zip Code?");
-            zipCode = scanner.nextLine();			
-            jobApplicant.setName(firstName, middleName, lastName);          
+            zipCode = scanner.nextLine();
+            jobApplicant.setName(firstName, middleName, lastName);
             jobApplicant.setSsn(ssn);
             jobApplicant.setZipCode(zipCode);
             jobApplicant.save();
 		}
 	}
-	
+
 }
