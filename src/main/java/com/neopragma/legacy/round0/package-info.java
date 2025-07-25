@@ -4,6 +4,8 @@
  * The Job Applicant application is coded in a single Java class file. There are various
  * code smells that suggest possible improvements in the design of the code.
  * 
+ * This is a workshop project for learning Java legacy code refactoring techniques.
+ * 
  * @author neopragma
  * @version 1.0.0
  * @since 1.7
