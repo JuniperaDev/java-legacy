@@ -79,6 +79,13 @@ public final class ModernName {
     }
     
     /**
+     * Alias for formatFullName() for API compatibility.
+     */
+    public String getFullName() {
+        return formatFullName();
+    }
+    
+    /**
      * Formats name for display with optional middle initial.
      */
     public String formatDisplayName() {

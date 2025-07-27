@@ -97,6 +97,13 @@ public final class ModernCollectionProcessor {
     }
     
     /**
+     * Alias for count() method for API compatibility.
+     */
+    public static <T> long countMatching(Collection<T> collection, Predicate<T> predicate) {
+        return count(collection, predicate);
+    }
+    
+    /**
      * Groups collection elements by a classifier function.
      * Demonstrates advanced Stream API operations for data organization.
      */

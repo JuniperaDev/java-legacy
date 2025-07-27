@@ -321,4 +321,11 @@ public final class ModernJsonProcessor {
     public static <T> Optional<T> transform(String jsonString, Function<JsonElement, Optional<T>> transformer) {
         return parseJson(jsonString).flatMap(transformer);
     }
+    
+    /**
+     * Alias for ZipCodeResponseProcessor.processCityStateResponse() for API compatibility.
+     */
+    public static Optional<CityState> processCityStateResponse(String jsonResponse) {
+        return ZipCodeResponseProcessor.processCityStateResponse(jsonResponse);
+    }
 }

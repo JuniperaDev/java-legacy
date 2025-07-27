@@ -73,6 +73,13 @@ public final class ModernSsn {
     }
     
     /**
+     * Alias for getFormatted() for API compatibility.
+     */
+    public String getFormattedSsn() {
+        return getFormatted();
+    }
+    
+    /**
      * Validates this SSN and returns the validation result.
      * Useful for checking validation status without exceptions.
      */

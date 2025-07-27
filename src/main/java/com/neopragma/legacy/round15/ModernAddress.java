@@ -1,6 +1,7 @@
 package com.neopragma.legacy.round15;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Modern immutable Address value object using builder pattern and Java 8 features.
@@ -174,6 +175,17 @@ public final class ModernAddress {
         
         public Builder withCityAndState(String city, String state) {
             this.cityState = CityState.of(city, state);
+            return this;
+        }
+        
+        /**
+         * Sets a lookup service function for resolving city/state from zip code.
+         */
+        public Builder withLookupService(java.util.function.Function<String, Optional<CityState>> lookupService) {
+            if (this.zipCode != null && lookupService != null) {
+                Optional<CityState> result = lookupService.apply(this.zipCode);
+                result.ifPresent(this::withCityState);
+            }
             return this;
         }
         

@@ -206,4 +206,28 @@ public final class ModernInputProcessor {
             return input -> first.validate(input) || second.validate(input);
         }
     }
+    
+    /**
+     * Static utility method for processing input with validation using functional programming.
+     * Replaces legacy manual input validation loops.
+     */
+    public static Optional<String> processInput(String input, java.util.function.Predicate<String> validator) {
+        if (input == null || validator == null) {
+            return Optional.empty();
+        }
+        
+        String processed = input.trim();
+        if (processed.isEmpty()) {
+            return Optional.empty();
+        }
+        
+        return validator.test(processed) ? Optional.of(processed) : Optional.empty();
+    }
+    
+    /**
+     * Alias for processInput() for API compatibility.
+     */
+    public static Optional<String> processAndValidate(String input, java.util.function.Predicate<String> validator) {
+        return processInput(input, validator);
+    }
 }
