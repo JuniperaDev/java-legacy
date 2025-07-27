@@ -102,7 +102,7 @@ jobs:
         restore-keys: ${{ runner.os }}-m2
         
     - name: Compile with warnings
-      run: mvn clean compile -Xlint:deprecation -Xlint:unchecked
+      run: mvn clean compile -Dmaven.compiler.showDeprecation=true -Dmaven.compiler.showWarnings=true
 
   package:
     name: Package Artifact
