@@ -1,5 +1,9 @@
 package com.neopragma.legacy.round9;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -15,7 +19,7 @@ public class CityStateLookupImpl implements CityStateLookup {
 
     /**
      * This method calls the internet-based service
-     * www.zip-codes.com/search to find the city and state
+     * api.zippopotam.us to find the city and state
      * that correspond to the zip code passed in.
      *
      * @param zipCode
@@ -25,14 +29,11 @@ public class CityStateLookupImpl implements CityStateLookup {
 	@Override
 	public CityState lookup(String zipCode) {
 		try {
-			URI uri = new URIBuilder()
-            .setScheme("http")
-            .setHost("www.zip-codes.com")
-            .setPath("/search.asp")
-            .setParameter("fld-zip", zipCode)
-            .setParameter("selectTab", "0")
-            .setParameter("srch-type", "city")
-            .build();
+            URI uri = new URIBuilder()
+                .setScheme("http")
+                .setHost("api.zippopotam.us")
+                .setPath("/us/" + zipCode.substring(0,5))
+                .build();
             HttpGet request = new HttpGet(uri);
             CloseableHttpClient httpclient = HttpClients.createDefault();
             CloseableHttpResponse response = httpclient.execute(request);
@@ -44,23 +45,20 @@ public class CityStateLookupImpl implements CityStateLookup {
                   	BufferedReader rd = new BufferedReader(
                         new InputStreamReader(response.getEntity().getContent()));
            	    	StringBuffer result = new StringBuffer();
-           		    String line = "";
+          		    String line = "";
            		    while ((line = rd.readLine()) != null) {
            			    result.append(line);
        		        }
-                    int metaOffset = result.indexOf("<meta ");
-                    int contentOffset = result.indexOf(" content=\"Zip Code ", metaOffset);
-                    contentOffset += 19;
-                    contentOffset = result.indexOf(" - ", contentOffset);
-                    contentOffset += 3;
-                    int stateOffset = result.indexOf(" ", contentOffset);
-                    city = result.substring(contentOffset, stateOffset);
-                    stateOffset += 1;
-                    state = result.substring(stateOffset, stateOffset+2);
+                    JsonElement jelement = new JsonParser().parse(result.toString());
+                    JsonObject jobject = jelement.getAsJsonObject();
+                    JsonArray jarray = jobject.getAsJsonArray("places");
+                    jobject = jarray.get(0).getAsJsonObject();
+                    city = jobject.get("place name").getAsString();
+                    state = jobject.get("state abbreviation").getAsString();
                 }
             } finally {
                 response.close();
-            }	
+            }
             return new CityState(city, state);
 	    } catch (Exception e) {
 	    	throw new CityStateLookupException(e);
